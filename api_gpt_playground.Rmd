@@ -1,0 +1,111 @@
+---
+title: "Getting gpt connection"
+output: html_notebook
+---
+
+# Conectando com a API. 
+
+Na página https://platform.openai.com/docs/api-reference/chat/create temos as referências necessárias para interagir com o chat gpt de qualquer lugar. Começando com um exemplo de inicialização.
+
+Exemplo de inicialização
+
+
+```{bash}
+curl https://api.openai.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are a helpful assistant."
+      },
+      {
+        "role": "user",
+        "content": "Hello!"
+      }
+    ]
+  }'
+
+```
+
+dentre as definições necessárias estão, autenticação e definição de "role", que é uma espécie de classificação de que entidade está interagindo com o chat, temos por exemplo as opções `system` e `role`.
+
+para trazer isso para o R, vamos usar o pacote `httr2`
+
+```{r}
+library(httr2)
+# Tenta realizar uma requisição, com retentativas e espera exponencial
+tente_req <- function(req, max_tentativas = 5) {
+  for (i in 1:max_tentativas) {
+    resp <- req_perform(req)
+    if (resp_status(resp) != 429) {
+      return(resp)
+    }
+    Sys.sleep(2^(i - 1)) # Espera exponencial: 1s, 2s, 4s, ...
+  }
+  stop("Número máximo de tentativas atingido.")
+}
+
+
+base_url <- 'https://api.openai.com/v1'
+api_key <- Sys.getenv('openia_app_secret')
+req <- request(base_url)
+resp <- req |> 
+  #endereço
+  req_url_path_append('/chat/completions') |> 
+  #localização
+  req_auth_bearer_token(token = api_key) |> 
+  #dados
+  req_headers("Content-Type" = "application/json") |> 
+  #definindo pra maquina quem sou eu
+  req_user_agent("Ían Muliterno | AI player") |> 
+  #aplicando o corpo do codigo
+  req_body_json(
+    list(
+      model = "gpt-3.5-turbo",
+      message = list(list(
+        role = "user",
+        content = "teste"))
+         )
+  ) |> 
+    req_retry(max_tries = 4) |> 
+    req_throttle(rate = 15) |> 
+  req_perform()
+
+# Executar a requisição com retentativas
+resp <- tente_req(req)
+# openia_chat_resposta <- resp |> 
+#   resp_body_json(simplifyVector = T)
+# 
+# openia_chat_resposta
+  
+```
+# codigo referência
+
+```{r}
+chat <- function(message) {
+  user_message <- list(list(role = "user", content = message))
+  base_url <- "https://api.openai.com/v1"
+  api_key <- Sys.getenv("openia_app_secret")
+  body <- list(model = "gpt-3.5-turbo",
+               messages = user_message)
+  req <- request(base_url)
+  resp <-
+    req |> 
+    req_url_path_append("chat/completions") |> 
+    req_auth_bearer_token(token = api_key) |> 
+    req_headers("Content-Type" = "application/json") |> 
+    req_user_agent("James Wade @jameshwade | OpenAI tutorial") |> 
+    req_body_json(body) |> 
+    req_retry(max_tries = 4) |> 
+    req_throttle(rate = 15) |> 
+    req_perform()
+  
+  openai_chat_response <- resp |> resp_body_json(simplifyVector = TRUE)
+  
+  openai_chat_response$choices$message$content
+}
+```
+
