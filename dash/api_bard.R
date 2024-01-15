@@ -1,6 +1,6 @@
 library(httr)
 library(jsonlite)
-
+library(tidyverse)
 # Function
 gemini <- function(prompt, 
                    temperature=0.5,
@@ -44,16 +44,11 @@ gemini <- function(prompt,
 }
 
 
-diferente_respostas <- c(
-  "Espero que o tempo de espera para ser atendido seja menor.",
-  "Gostaria que o cardápio tivesse mais fotos dos pratos.",
-  "",
-  "Preferiria que houvesse mais opções de bebidas não alcoólicas.",
-  "Seria melhor se o restaurante aceitasse reservas online.",
-  "",
-  "Poderiam melhorar a acústica do local para reduzir o ruído.",
-  ""
-)
+dados <- read.csv('dash2/base.csv')
+
+#o que o cliente gostaria de ver diferente quando visitar de novo
+diferente_respostas <- dados$novo_diferente
+
 respostas_treated <- diferente_respostas[stringr::str_length(diferente_respostas) > 0]
 
 prompt <- "atue como um analista de pesquisa de satisfação.
@@ -93,25 +88,49 @@ retorno_gemini <- gemini(prompt)
 ############### prompt for resposta aberta sobre ambiente ##########################
 
 
-prompt_ambiente <- c("vou lhe passar um texto onde cada linha representa a resposta de um cliente à pergunta <o que mais te chamou atenção no ambiente do restaurante>, quero reduzir estas respostas, através de tags, uma tag deve ser uma string de até 3 palavras que consiga representar a mensagem passada pelo texto que ela representa. Dito isto, encontre a palavra chave de cada resposta e retorno a contagem de tag. Não quero que me mostre nenhum código, quero que execute a atividade. a saída deve de maneira que eu possa inserir dentro da função fread e com isso retornar um dataframe
+prompt_ambiente0 <- c("vou lhe passar um texto onde cada linha representa a resposta de um cliente à pergunta <o que mais te chamou atenção no ambiente do restaurante>, quero reduzir estas respostas, através de tags, uma tag deve ser uma string de até 3 palavras que consiga representar a mensagem passada pelo texto que ela representa. Dito isto, encontre a palavra chave de cada resposta e retorne a contagem de tag e se o sentimento daquela mensagem é positivo ou negativo. Não quero que me mostre nenhum código, quero que execute a atividade. a saída deve ter letras minusculas e vir de maneira que eu possa inserir dentro da função fread e com isso retornar um dataframe sem header e com 3 colunas : Tag, Contagem, Sentimento
 
-respostas")
+respostas
+")
 
-ambiente_respostas <- c(
-  "O estilo moderno e acolhedor do interior.",
-  "",
-  "A música ambiente estava perfeita, não muito alta nem muito baixa.",
-  "A iluminação suave e as cores harmoniosas do espaço.",
-  "",
-  "A limpeza e organização do local foram impecáveis.",
-  "O sorriso e a simpatia dos funcionários.",
-  ""
-)
+ambiente_respostas <- dados$ambiente_aberta
+
+prompt_add_tag_externa <- c(" as seguintes tags já existem, associar os dados a tags já existentes deve ser priorizado, mas se preciso, pode criar outras tags")
 
 
-prompt_ambiente <- paste(prompt_ambiente,paste(ambiente_respostas,collapse = 'outro cliente: '))
+retorno_df <- data.table::data.table()
+#comprimento do loop
+k <- ceiling(nrow(dados)/50)
+
+for(i in 1:k){
+
+if(i < k){
+  indice_inicio <- i*50 - 49
+  indice_fim <- i*50
+}else{
+  indice_inicio <- (i-1)*50 + 1
+  indice_fim <- nrow(dados)
+  }
+prompt_ambiente <- paste(prompt_ambiente0,paste(ambiente_respostas[indice_inicio:indice_fim],
+                                                collapse = '\n outro cliente: '))
 retorno_gemini <- gemini(prompt_ambiente)
 
-data.table::fread(retorno_gemini,header = T) |> 
-  dplyr::select(Tag,Contagem)
+retorno_aux <- data.table::fread(retorno_gemini) 
+
+if(!any(grepl("tag",names(retorno_df)))){
+  names(retorno_aux) <- c('tag','contagem','sentimento')
+}
+
+retorno_df <- retorno_df |> 
+bind_rows(retorno_aux)
+
+
+}
+
+retorno_df <- retorno_df |> 
+  group_by(tag, sentimento) |> 
+  summarise(contagem = sum(contagem))
+
+
+write.csv(retorno_df,'resposta_aberta_ambiente.csv')
 
