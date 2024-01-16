@@ -41,6 +41,7 @@ The dashboard offers the following features:
 * Visualization of general survey data, such as the number of respondents, the average rating, the main positive and negative points, etc.
 * Analysis of satisfaction by survey item, such as service, food, environment, etc.
 * Analysis of customer sentiment, using artificial intelligence techniques.
+* Actionable insights to increase customer satisfaction, powered by AI.
 
 ## Next steps
 
