@@ -1,6 +1,6 @@
 library(httr)
 library(jsonlite)
-library(tidyverse)
+library(dplyr)
 # Function
 gemini <- function(prompt, 
                    temperature=0.5,
@@ -36,7 +36,7 @@ gemini <- function(prompt,
     stop(paste("Status Code - ", response$status_code))
   }
   
-  candidates <- content(response)$candidates
+  candidates <- httr::content(response)$candidates
   outputs <- unlist(lapply(candidates, function(candidate) candidate$content$parts))
   
   return(outputs)
@@ -47,7 +47,7 @@ gemini <- function(prompt,
 dados <- read.csv('dash2/base.csv')
 
 #o que o cliente gostaria de ver diferente quando visitar de novo
-diferente_respostas <- dados$novo_diferente
+diferente_respostas <- unique(dados$novo_diferente)
 
 respostas_treated <- diferente_respostas[stringr::str_length(diferente_respostas) > 0]
 
@@ -59,12 +59,14 @@ abaixo vou enumerar algumas informações importantes
 
 - 1. a pergunta feita foi <o que você gostaria que fosse diferente numa próxima visita?> 
 - 2. existe uma plataforma de treinamento de staff, caso sua analise identifique alguma necessidade de treinamento de equipe, identifique e informe qual treinamento é necessário   
-- 3. a saída deve ser em HTML, mas não coloque dentro de um chunck
+- 3. a entrada é texto, mas a saída deve ser em HTML, mas não coloque dentro de um chunck
 
 "
 
-prompt <- paste(prompt,paste(diferente_respostas,collapse = 'outro cliente: '))
+prompt <- paste(prompt,paste(diferente_respostas,collapse = '\n outro cliente: '))
 retorno_gemini <- gemini(prompt)
+
+write.table(retorno_gemini, file = "dash2/retorno_ia.txt", row.names = FALSE, col.names = FALSE)
 
 
 ########## abaixo, exemplo de um retorno MUITO bom #########
@@ -88,15 +90,15 @@ retorno_gemini <- gemini(prompt)
 ############### prompt for resposta aberta sobre ambiente ##########################
 
 
-prompt_ambiente0 <- c("vou lhe passar um texto onde cada linha representa a resposta de um cliente à pergunta <o que mais te chamou atenção no ambiente do restaurante>, quero reduzir estas respostas, através de tags, uma tag deve ser uma string de até 3 palavras que consiga representar a mensagem passada pelo texto que ela representa. Dito isto, encontre a palavra chave de cada resposta e retorne a contagem de tag e se o sentimento daquela mensagem é positivo ou negativo. Não quero que me mostre nenhum código, quero que execute a atividade. a saída deve ter letras minusculas e vir de maneira que eu possa inserir dentro da função fread e com isso retornar um dataframe sem header e com 3 colunas : Tag, Contagem, Sentimento
+prompt_ambiente0 <- c("vou lhe passar um texto onde cada linha representa a resposta de um cliente à pergunta <o que mais te chamou atenção no ambiente do restaurante>, quero reduzir estas respostas, através de tags, uma tag deve ser uma string de até 3 palavras separadas por espaço, que consiga representar a mensagem passada pelo texto que ela representa. Dito isto, encontre a palavra chave de cada resposta e retorne a contagem de tag e se o sentimento daquela mensagem é positivo ou negativo. Não quero que me mostre nenhum código, quero que execute a atividade. a saída deve ter letras minusculas e vir de maneira que eu possa inserir dentro da função fread e com isso retornar um dataframe sem header e com 3 colunas : Tag, Contagem, Sentimento
 
 respostas
 ")
 
 ambiente_respostas <- dados$ambiente_aberta
 
-prompt_add_tag_externa <- c(" as seguintes tags já existem, associar os dados a tags já existentes deve ser priorizado, mas se preciso, pode criar outras tags")
-
+prompt_add_tag_externa <- c("associar os dados a tags já existentes deve ser priorizado, mas se preciso, pode criar outras tags")
+tags_existentes <- "teste teste"
 
 retorno_df <- data.table::data.table()
 #comprimento do loop
@@ -133,4 +135,129 @@ retorno_df <- retorno_df |>
 
 
 write.csv(retorno_df,'resposta_aberta_ambiente.csv')
+
+
+
+############### prompt for resposta aberta sobre o que gostaria de ver diferente ##########################
+
+
+prompt_ambiente0 <- c("vou lhe passar um texto onde cada linha representa a resposta de um cliente à pergunta <o que gostaria que fosse diferente numa segunda visita?>, quero reduzir estas respostas, através de tags, uma tag deve ser uma string de exatamente duas palavras separadas por underline, que consiga representar a mensagem passada pelo texto que ela representa. Dito isto, encontre a palavra chave de cada resposta e retorne a contagem de tag. Não quero que me mostre nenhum código, quero que execute a atividade. a saída deve ter letras minusculas e vir de maneira que eu possa inserir dentro da função fread e com isso retornar um dataframe sem header e com 2 colunas : Tag, Contagem
+
+respostas
+")
+
+ambiente_respostas <- dados$novo_diferente
+
+prompt_add_tag_externa <- c("associar os dados a tags já existentes deve ser priorizado, mas se preciso, pode criar outras tags")
+tags_existentes <- "teste teste"
+
+retorno_df <- data.table::data.table()
+#comprimento do loop
+k <- ceiling(nrow(dados)/50)
+
+for(i in 1:k){
+  
+  if(i < k){
+    indice_inicio <- i*50 - 49
+    indice_fim <- i*50
+  }else{
+    indice_inicio <- (i-1)*50 + 1
+    indice_fim <- nrow(dados)
+  }
+  prompt_ambiente <- paste(prompt_ambiente0,paste(ambiente_respostas[indice_inicio:indice_fim],
+                                                  collapse = '\n outro cliente: '))
+  retorno_gemini <- gemini(prompt_ambiente)
+  
+  retorno_aux <- data.table::fread(retorno_gemini) 
+  
+  if(!any(grepl("tag",names(retorno_df)))){
+    names(retorno_aux) <- c('tag','contagem')
+  }
+  
+  retorno_df <- retorno_df |> 
+    bind_rows(retorno_aux)
+  
+  
+}
+
+retorno_df <- retorno_df |> 
+  group_by(tag) |> 
+  summarise(contagem = sum(contagem))
+
+
+write.csv(retorno_df,'diferente_visita2.csv')
+
+
+
+
+############### prompt for resposta aberta sobre o que gostaria de rever ##########################
+
+
+prompt_ambiente0 <- c("vou lhe passar um texto onde cada linha representa a resposta de um cliente à pergunta <o que gostaria de ver novamente numa segunda visita?>, quero reduzir estas respostas, através de tags, uma tag deve ser uma string de exatamente duas palavras separadas por underline, que consiga representar a mensagem passada pelo texto que ela representa. Dito isto, encontre a palavra chave de cada resposta e retorne a contagem de tag. Não quero que me mostre nenhum código, quero que execute a atividade. a saída deve ter letras minusculas e vir de maneira que eu possa inserir dentro da função fread e com isso retornar um dataframe sem header e com 2 colunas : Tag, Contagem
+
+respostas
+")
+
+ambiente_respostas <- dados$denovo_manter
+
+prompt_add_tag_externa <- c("associar os dados a tags já existentes deve ser priorizado, mas se preciso, pode criar outras tags")
+tags_existentes <- "teste teste"
+
+retorno_df <- data.table::data.table()
+#comprimento do loop
+k <- ceiling(nrow(dados)/50)
+
+for(i in 1:k){
+  
+  if(i < k){
+    indice_inicio <- i*50 - 49
+    indice_fim <- i*50
+  }else{
+    indice_inicio <- (i-1)*50 + 1
+    indice_fim <- nrow(dados)
+  }
+  prompt_ambiente <- paste(prompt_ambiente0,paste(ambiente_respostas[indice_inicio:indice_fim],
+                                                  collapse = '\n outro cliente: '))
+  retorno_gemini <- gemini(prompt_ambiente)
+  
+  retorno_aux <- data.table::fread(retorno_gemini) 
+  
+  if(!any(grepl("tag",names(retorno_df)))){
+    names(retorno_aux) <- c('tag','contagem')
+  }
+  
+  retorno_df <- retorno_df |> 
+    bind_rows(retorno_aux)
+  
+  
+}
+
+retorno_df <- retorno_df |> 
+  group_by(tag) |> 
+  summarise(contagem = sum(contagem))
+
+
+write.csv(retorno_df,'rever_visita2.csv')
+
+
+
+
+# para testar a função post 
+# POST(
+#   url = paste0("https://generativelanguage.googleapis.com/v1beta/models/", paste0("gemini-pro", ":generateContent")),
+#   query = list(key = Sys.getenv("gemini_app_secret")),
+#   content_type_json(),
+#   encode = "json",
+#   body = list(
+#     contents = list(
+#       parts = list(
+#         list(text = "ola mundo")
+#       )),
+#     generationConfig = list(
+#       temperature = 0.5,
+#       maxOutputTokens = 1024
+#     )
+#   )
+# )
+
 
