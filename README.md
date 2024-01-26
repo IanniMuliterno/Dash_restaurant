@@ -4,6 +4,8 @@ This repository contains a dashboard project that aims to analyze customer satis
 
 The project is still under development, but it is already possible to obtain interesting results. The data set used is artificial, but it is based on real data.
 
+Ps: [Appsillon](https://explore.appsilon.com/shiny-demo-gallery) inspired me to make it prettier, so check them out!
+
 ![](https://github.com/IanniMuliterno/Dash_restaurant/blob/main/img/gif_for_readme.gif)
 
 ## Dependencies
