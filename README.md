@@ -48,7 +48,6 @@ The dashboard offers the following features:
 The next steps for the project include:
 
 * allow people to run it in their on machine, after cloning
-* Add a button that allow user to see the answers timeseries by week, month, daytime and weekday.
 * add a comparison with previous period. eg. 10% more replies than last period (be it month, weekday, etc).
 * Analysis of satisfaction by customer, grouping by demographic data, such as age, gender, etc.
 
