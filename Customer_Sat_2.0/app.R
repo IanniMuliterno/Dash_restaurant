@@ -14,6 +14,7 @@ library(jsonlite)
 source("modulos/mod_boxes.R")
 source("modulos/mod_ts.R")
 source("modulos/mod_bar.R")
+source("modulos/mod_basic_cnt.R")
 
 RAA_df <- read.csv('data/resposta_aberta_ambiente.csv')
 DV2_df <- read.csv('data/diferente_visita2.csv')
@@ -79,8 +80,9 @@ ui <- dashboardPage(
               
       ),
       tabItem(
-        tabName = "Analytics",
+        tabName = "analytics",
           
+        basic_cnt_ui("atd_exp",box_title = "Experiência no atendimento"),
         bar_ui("ambiente_aberta",box_title = "Resposta aberta sobre ambiente"),
         bar_ui("visita2_diferente",box_title = "O que gostaria que fosse diferente numa segunda visita"),
         bar_ui("denovo_manter",box_title = "O que gostaria de ver novamente numa segunda visita")
@@ -115,14 +117,21 @@ server <- function(input, output,session) {
   ts_server(id = "flow",
             df = filtered_data)
   
+  basic_cnt_server(id = "atd_exp",
+                   x_col = "atnd_experience",
+                   df = filtered_data)
+  
   bar_server(id = "ambiente_aberta",
-             df = RAA_df)
+             df = RAA_df,
+             sentiment = TRUE)
   
   bar_server(id = "visita2_diferente",
-             df = DV2_df)
+             df = DV2_df,
+             sentiment = FALSE)
   
   bar_server(id = "denovo_manter",
-             df = RV2_df)
+             df = RV2_df,
+             sentiment = FALSE)
 
   
 }
