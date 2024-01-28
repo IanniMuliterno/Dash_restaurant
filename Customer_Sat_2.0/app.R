@@ -11,19 +11,19 @@ library(syuzhet)
 library(httr)
 library(jsonlite)
 
-source("mod_boxes.R")
-source("mode_ts.R")
+source("modulos/mod_boxes.R")
+source("modulos/mod_ts.R")
+source("modulos/mod_bar.R")
 
-dados <- read.csv('base.csv')|> 
+RAA_df <- read.csv('data/resposta_aberta_ambiente.csv')
+DV2_df <- read.csv('data/diferente_visita2.csv')
+RV2_df <- read.csv('data/rever_visita2.csv')
+read_text <- read.table("data/retorno_ia.txt", header = FALSE, stringsAsFactors = FALSE)
+retorno_ia <- read_text$V1
+
+dados <- read.csv('data/base.csv')|> 
   mutate(dia_semana = factor(dia_semana, levels = c('domingo','segunda-feira','terça-feira','quarta-feira',
                                                     'quinta-feira','sexta-feira','sábado')))
-
-
-RAA_df <- read.csv('resposta_aberta_ambiente.csv')
-DV2_df <- read.csv('diferente_visita2.csv')
-RV2_df <- read.csv('rever_visita2.csv')
-read_text <- read.table("retorno_ia.txt", header = FALSE, stringsAsFactors = FALSE)
-retorno_ia <- read_text$V1
 
 # UI
 # Define UI
@@ -70,11 +70,23 @@ ui <- dashboardPage(
                 box_ui("box_total_cli"),
                 box_ui("box_novo_cli")
                 ),
-              ts_ui("flow")
+              ts_ui("flow"),
+              box(title = "Recomendações",
+                  HTML(retorno_ia)  ,
+                  width = 12, status = "primary",
+                  solidHeader = T)
               
               
+      ),
+      tabItem(
+        tabName = "Analytics",
+          
+        bar_ui("ambiente_aberta",box_title = "Resposta aberta sobre ambiente"),
+        bar_ui("visita2_diferente",box_title = "O que gostaria que fosse diferente numa segunda visita"),
+        bar_ui("denovo_manter",box_title = "O que gostaria de ver novamente numa segunda visita")
+        )
       )
-)
+
 ))
 
 
@@ -102,6 +114,15 @@ server <- function(input, output,session) {
   
   ts_server(id = "flow",
             df = filtered_data)
+  
+  bar_server(id = "ambiente_aberta",
+             df = RAA_df)
+  
+  bar_server(id = "visita2_diferente",
+             df = DV2_df)
+  
+  bar_server(id = "denovo_manter",
+             df = RV2_df)
 
   
 }
