@@ -1,0 +1,12 @@
+name: Customer_Sat_2
+title: Customer_Sat_2
+username: ianmuliterno
+account: ianmuliterno
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11054476
+bundleId: 8192400
+url: https://ianmuliterno.shinyapps.io/Customer_Sat_2/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE

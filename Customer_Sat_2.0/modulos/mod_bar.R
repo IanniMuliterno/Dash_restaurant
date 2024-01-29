@@ -10,16 +10,27 @@ bar_ui <- function(id,box_title = "title"){
 }
 
 
-bar_server <- function(id,df){
+bar_server <- function(id,df,sentiment = FALSE){
   moduleServer(
     id = id,
     module = function(input,output,session){
+      if(sentiment){
+        df2 <- df |>  
+          arrange(desc(contagem)) |> 
+          slice(1:5) |>
+          ggplot(aes(reorder(tag,+contagem),contagem,fill = sentimento))
+        
+      }else{
+        df2 <- df |>  
+          arrange(desc(contagem)) |> 
+          slice(1:5) |>
+          ggplot(aes(reorder(tag,+contagem),contagem))
+        
+      }
+      
       
       output$bar_chart <- renderPlot({
-        df |>  
-        arrange(desc(contagem)) |> 
-        slice(1:5) |>
-        ggplot(aes(reorder(tag,+contagem),contagem,fill = sentimento))+
+        df2 +
         geom_bar(stat = 'identity',width = 0.62, alpha = 0.7) +
         coord_flip() +
         theme_ipsum() +
