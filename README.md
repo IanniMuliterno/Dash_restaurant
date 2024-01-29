@@ -1,12 +1,11 @@
 # Shiny + AI: Restaurant Customer Satisfaction Dashboard
 
-This repository contains a dashboard project that aims to analyze customer satisfaction survey responses. The dashboard is powered by artificial intelligence, which provides more accurate insights for action.
+This repository contains a dashboard project that aims to analyze customer satisfaction survey responses. The dashboard is powered by artificial intelligence, which provides more accurate insights for action. The way I interact with the AI is a trade secret, that's why I bring it as a static result in this repository, but to understand how to connect with OPENAI API via R, check `api_gpt_playground.Rmd`.
 
-The project is still under development, but it is already possible to obtain interesting results. The data set used is artificial, but it is based on real data.
+### See it live [here](https://ianmuliterno.shinyapps.io/Customer_Sat_2/)
 
 Ps: [Appsillon](https://explore.appsilon.com/shiny-demo-gallery) inspired me to make it prettier, so check them out!
 
-![](https://github.com/IanniMuliterno/Dash_restaurant/blob/main/img/gif_for_readme.gif)
 
 ## Dependencies
 
@@ -25,7 +24,7 @@ The libraries used in the project are:
 * httr
 * jsonlite
 
-## How to run the project (it will be possible soon)
+## How to run the project
 
 To run the project, follow these steps:
 
@@ -41,16 +40,16 @@ The dashboard will open in your browser.
 The dashboard offers the following features:
 
 * Visualization of general survey data, such as the number of respondents, the average rating, the main positive and negative points, etc.
-* Analysis of satisfaction by survey item, such as service, food, environment, etc.
-* Analysis of customer sentiment, using artificial intelligence techniques.
-* Actionable insights to increase customer satisfaction, powered by AI.
+* * Actionable insights to increase customer satisfaction, powered by AI.
+* in the Analytics tab, we have analysis of customer sentiment, using artificial intelligence techniques.
+
 
 ## Next steps
 
 The next steps for the project include:
 
-* allow people to run it in their on machine, after cloning
 * add a comparison with previous period. eg. 10% more replies than last period (be it month, weekday, etc).
+* Allow user to interact with AI for further support and insights on what to do.
 * Analysis of satisfaction by customer, grouping by demographic data, such as age, gender, etc.
 
 ## Contributions
